@@ -1,25 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <title>Login Page</title>
-        <link rel="stylesheet" href="../css/login.css">
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title>Login</title>
+
+        <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+        <link href="../css/style.css" rel="stylesheet"/>
     </head>
+
     <body>
-        <h2>Login</h2>
 
-        <form id="loginForm">
-
-            <label>Email</label><br>
-            <input type="email" id="email" required><br><br>
-
-            <label>Password</label><br>
-            <input type="password" id="password" required><br>
-
-            <button type="submit">Login</button>
-        </form>
+        <div class="authPage">
         
-        <p id ="message"></p>
+            <div class="authLeft">
 
+                <div class="card">
+                    <div class="cardHeader">
+                        <div class="logo">City Helpline</div>
+                        <h1>Login</h1>
+                    </div>
+
+                    <div id="message" class="message"></div>
+
+                    <form id="loginForm" >
+
+                        <div class="field">
+                            <label for="email">Email Address</label>
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                placeholder="rawat@examile.com"
+                                required
+                                autocomplete="email"
+                            />
+                        </div>
+
+                
+                        <div class="field">
+                            <label for="password">Password</label>
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                placeholder="Min. 6 characters"
+                                required
+                                minlength="6"
+                                autocomplete="new-password"
+                            />
+                            <p class="hint">Use at least 6 characters.</p>
+                        </div>
+
+                        <button type="submit" class="primaryBtn" id="loginBtn">Create Account</button>
+                        
+                    </form>
+                    <div class="card-footer">
+                        Don't have an account? <a href="signup.html">Signup</a>
+                    </div>
+
+                </div>
+                <!--card end-->
+            </div>
+
+            <div class="authRight">
+                <img src="../images/xrightSide.jpg" alt="image">
+            </div>
+        </div>
+        
         <script type="module" src="../js/login.js"></script>
     </body>
-</html>
+</html>>
+    
