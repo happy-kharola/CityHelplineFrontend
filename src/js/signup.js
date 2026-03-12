@@ -23,7 +23,7 @@ form.addEventListener('submit', async (e)=>{
 
     submitBtn.disabled = true;
     // submitBtn.textContent = 'Creating account...'; 
-    // when using abone line, you have change back text to orgignal too
+    // when using the above line, text stays changed even after account creation. 
 
     const data = {
         username: document.getElementById("username").value,
@@ -44,7 +44,7 @@ form.addEventListener('submit', async (e)=>{
         submitBtn.disabled = false;
     }
     
-    //"finally" the code that must run despite "try" success or not.//
+    //"finally" the code that must run despite try's success or not.//
     
 })
 
