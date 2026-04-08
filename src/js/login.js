@@ -1,35 +1,44 @@
 import { loginUser } from "../services/authService.js";
 
-const form = document.getElementById("loginForm");
-const message = document.getElementById("message");
+const form     = document.getElementById("loginForm");
+const message  = document.getElementById("message");
 const loginBtn = document.getElementById("loginBtn");
 
-function showMessage(text,type){
-    message.textContent =  text;
-    message.className =  `message ${type}`; 
+function showMessage(text, type) {
+  message.textContent = text;
+  message.className   = `message ${type}`;
 }
 
 form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  loginBtn.disabled = true;
 
-    e.preventDefault();
-    loginBtn.disabled = true; 
-    // loginBtn.textContent = 'Loggin in...';
-    
-    const data = {
-        email : document.getElementById("email").value, 
-        password: document.getElementById("password").value
+  const data = {
+    email:    document.getElementById("email").value.trim(),
+    password: document.getElementById("password").value,
+  };
+
+  try {
+    const res = await loginUser(data);
+
+    localStorage.setItem("token", res.token);
+
+    // Store username for navbar greeting (use whatever field your server returns)
+    if (res.user?.username || res.user?.name) {
+      localStorage.setItem("username", res.user.username || res.user.name);
     }
 
-    try{
-        const response = await loginUser(data);
-        showMessage(response.message);
+    showMessage(`Welcome back, ${res.user?.username || res.user?.name || "User"}!`, "success");
 
-    }catch{
-        showMessage("Login Failed. Please try again","error");
+    setTimeout(() => {
+      window.location.href = "dashboard.html";
+    }, 800);
 
-    }finally{
-        loginBtn.disabled = false;
-    }
+  } catch (error) {          // ← was missing (error) — caused ReferenceError
+    console.error(error);
+    showMessage(error.message || "Login failed. Please try again.", "error");
 
+  } finally {
     loginBtn.disabled = false;
+  }
 });

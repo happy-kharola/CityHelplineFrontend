@@ -33,18 +33,29 @@ body{
   min-height: 100vh;
 }
 
+
+
+
 .authLeft {
   flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: var(--background-color);
-  padding: 40px;
+
+  /* testing
+  modification */
+  background: #f7f9fc;
+
+  padding: 60px;
 }
 
 .authRight{
   flex: 1;
-  background-color: var(--primary-color)
+  background-color: var(--primary-color);
+
+  /* testing
+  modification */
+  border-left: 1px solid #e6e8ee;
 }
 
 
@@ -52,6 +63,9 @@ body{
   width: 100%;
   height: 100%;
   object-fit: cover;
+  
+  /* testing */
+  object-position: left center;
 }
 
 .card {
@@ -59,15 +73,24 @@ body{
   max-width: 420px;
 }
 
-.cardHeader{
-  margin-bottom: 24px;
+.cardHeader h1 {
+  font-size: 42px;
+
+  /* testing
+  modification */
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
 .logo {
   font-family: "DM Serif Display", serif;
-  font-size: 50px;
-  margin-bottom: 16px;
-  
+
+  /* testing
+  modification */
+  font-size: 36px;
+  margin-bottom: 10px;
+
+  color: #111;
 }
 
 .cardHeader h1 {
@@ -79,7 +102,7 @@ body{
 .field {
   display: flex;
   flex-direction: column;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
 }
 
 .field input {
@@ -87,7 +110,15 @@ body{
   border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 14px;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;   /* modification */
+}
+
+/* testing
+modification */
+.field input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(0,123,255,0.15);
 }
 
 
@@ -106,19 +137,32 @@ body{
 
 .primaryBtn {
   width: 100%;
-  padding: 12px;
-  margin-top: 8px;
+  padding: 14px;
+
+  /* testing
+  modification */
+  margin-top: 16px;
+
   background-color: var(--primary-color);
   color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-}
 
+  border: none;
+  border-radius: 8px;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
 .primaryBtn:hover {
   background-color: var(--primary-dark);
+
+  /* testing
+  modification */
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
 }
 
 

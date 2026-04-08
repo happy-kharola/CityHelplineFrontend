@@ -94,7 +94,7 @@ const COMPLAINTS = [
 
 // Health check
 app.get('/', (req, res) => {
-  res.json({ status: 'City Helpline backend running', port: PORT });
+  res.json({ status: 'CityFix backend running', port: PORT });
 });
 
 // ── Auth: Signup ─────────────────────────────────────────────
@@ -184,7 +184,7 @@ app.post('/api/complaints', (req, res) => {
 
 // ── Start ────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`\n✅  City Helpline backend running at http://localhost:${PORT}`);
+  console.log(`\n✅  CityFix dummy backend running at http://localhost:${PORT}`);
   console.log(`   POST http://localhost:${PORT}/api/signup`);
   console.log(`   POST http://localhost:${PORT}/api/login`);
   console.log(`   GET  http://localhost:${PORT}/api/complaints`);

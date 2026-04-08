@@ -1,53 +1,52 @@
-import {signupUser} from "../services/authService.js";
+import { signupUser } from "../services/authService.js";
 
-
-const form = document.getElementById("signupForm");
-const message = document.getElementById("message");
+const form      = document.getElementById("signupForm");
+const message   = document.getElementById("message");
 const submitBtn = document.getElementById("submitBtn");
 
-function showMessage(text,type){
-    message.textContent =  text;
-    message.className =  `message ${type}`; 
+function showMessage(text, type) {
+  message.textContent = text;
+  message.className   = `message ${type}`;
 }
 
-form.addEventListener('submit', async (e)=>{
-    
-    e.preventDefault();
-    const password = document.getElementById("password");
-    const confirmPassword = document.getElementById("confirmPassword");
-    
-    if(password.value != confirmPassword.value){
-        showMessage("Password do not match. Try again.","error");
-        return;
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const password        = document.getElementById("password").value;
+  const confirmPassword = document.getElementById("confirmPassword").value;
+
+  if (password !== confirmPassword) {
+    showMessage("Passwords do not match. Try again.", "error");
+    return;
+  }
+
+  submitBtn.disabled = true;
+
+  const data = {
+    name: document.getElementById("username").value.trim(),
+    email:    document.getElementById("email").value.trim(),
+    password,
+  };
+
+  try {
+    const res = await signupUser(data);
+
+    localStorage.setItem("token", res.token);
+    if (res.user?.username || res.user?.name) {
+      localStorage.setItem("username", res.user.username || res.user.name);
     }
 
-    submitBtn.disabled = true;
-    // submitBtn.textContent = 'Creating account...'; 
-    // when using the above line, text stays changed even after account creation. 
+    showMessage(`Account created! Welcome, ${res.user?.username || res.user?.name || "User"}!`, "success");
 
-    const data = {
-        username: document.getElementById("username").value,
-        password: document.getElementById("password").value,
-        email: document.getElementById("email").value 
-    };
+    setTimeout(() => {
+      window.location.href = "login.html";   // was "/login" — needs .html
+    }, 800);
 
-    try{
-        const response = await signupUser(data);
-        showMessage(response.message);
+  } catch (error) {
+    console.error(error);
+    showMessage(error.message || "Signup failed. Please try again.", "error");
 
-    }catch(error){
-
-        console.error(error);
-        showMessage("Signup Failed. Please try again.", "error");
-    
-    }finally{
-        submitBtn.disabled = false;
-    }
-    
-    //"finally" the code that must run despite try's success or not.//
-    
-})
-
-// SERVER REQUIREMENTs
-// expecting server to redirect to login page in  successive response.
-// user in json the user's name with key name 'username' not 'userName'
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
