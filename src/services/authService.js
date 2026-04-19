@@ -1,20 +1,32 @@
+// Functions in this file:
+// - registerUser: Registers a new user
+// - loginUser: Authenticates a user and returns login data
+// - getCurrentUser: Fetches the currently logged-in user's profile
+
 import { API_BASE } from "../js/config.js";
 import { getToken } from "../utils/auth.js";
 
 // POST /api/auth/register
-export async function signupUser(userData) {
-  const response = await fetch(`${API_BASE}/api/auth/register`, {
+// POST /api/auth/login
+// GET /api/auth/profile  (requires token)
+
+
+
+export async function registerUser(userData) {
+  const res = await fetch(`${API_BASE}/api/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(userData),
   });
 
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || "Signup failed");
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "Signup failed");
   return data;
 }
 
-// POST /api/auth/login
+
+
+
 export async function loginUser(userData) {
   const response = await fetch(`${API_BASE}/api/auth/login`, {
     method: "POST",
@@ -27,11 +39,12 @@ export async function loginUser(userData) {
   return data;
 }
 
-// GET /api/auth/profile  (requires token)
+
+
+
 export async function getCurrentUser() {
   const token = getToken();
   if (!token) throw new Error("No token found");
-
   const res = await fetch(`${API_BASE}/api/auth/profile`, {
     method: "GET",
     headers: {
@@ -39,7 +52,12 @@ export async function getCurrentUser() {
       "Content-Type": "application/json",
     },
   });
-
+  if (res.status === 401) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    window.location.href = "/login";
+    return;
+  }
   if (!res.ok) throw new Error("Session expired or unauthorized");
   return await res.json();
 }

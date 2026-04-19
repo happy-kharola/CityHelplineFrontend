@@ -24,15 +24,23 @@ form.addEventListener("submit", async (e) => {
     localStorage.setItem("token", res.token);
 
     // Store username for navbar greeting (use whatever field your server returns)
-    if (res.user?.username || res.user?.name) {
-      localStorage.setItem("username", res.user.username || res.user.name);
+    if (res.user?.name) {
+      localStorage.setItem("name", res.user.name);
+    }
+    // store role
+    if (res.user?.role) {
+      localStorage.setItem("role", res.user.role);
     }
 
-    showMessage(`Welcome back, ${res.user?.username || res.user?.name || "User"}!`, "success");
+    showMessage(`Welcome back, ${res.user?.name || "User"}!`, "success");
 
     setTimeout(() => {
-      window.location.href = "dashboard.html";
-    }, 800);
+      if(res.user?.role === "admin"){
+        window.location.href = "admin-dashboard.html";
+      } else {
+        window.location.href = "dashboard.html";
+      }
+    }, 400);
 
   } catch (error) {          // ← was missing (error) — caused ReferenceError
     console.error(error);

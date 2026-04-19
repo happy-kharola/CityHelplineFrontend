@@ -1,9 +1,4 @@
 
-/**
- * 
- * profile.js — CityFix
- */
-
 import { getCurrentUser } from "../services/authService.js";
 import { fetchComplaints } from "../services/complaintService.js"; // fetchMyComplaints doesn't exist on server
 import { checkAuth, logoutUser } from "../utils/auth.js";
@@ -13,9 +8,9 @@ checkAuth();
 
 document.getElementById("logout-btn").addEventListener("click", logoutUser);
 
-const savedUser = localStorage.getItem("username");
+const savedUser = localStorage.getItem("name");
 if (savedUser) {
-  document.getElementById("nav-username").textContent = `Hey, ${savedUser} 👋`;
+  document.getElementById("nav-username").textContent = `Hey, ${savedUser}`;
 }
 
 // ── Status config — matches server enum exactly ───────────────
@@ -50,14 +45,14 @@ async function loadUserInfo() {
     const name  = user.name || savedUser || "User";
     const email = user.email || "No email";
 
-    currentUserId = user.user_id; // needed to filter complaints below
+    currentUserId = user.id; // needed to filter complaints below
 
     document.getElementById("profile-name").textContent   = esc(name);
     document.getElementById("profile-email").textContent  = esc(email);
     document.getElementById("nav-username").textContent   = `Hey, ${esc(name)} 👋`;
     document.getElementById("avatar-initials").textContent = name.charAt(0).toUpperCase();
 
-    localStorage.setItem("username", name);
+    localStorage.setItem("name", name);
   } catch (err) {
     console.error("Failed to load user:", err);
   }

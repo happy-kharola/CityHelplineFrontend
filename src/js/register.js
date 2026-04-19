@@ -1,4 +1,4 @@
-import { signupUser } from "../services/authService.js";
+import { registerUser } from "../services/authService.js";
 
 const form      = document.getElementById("signupForm");
 const message   = document.getElementById("message");
@@ -22,6 +22,8 @@ form.addEventListener("submit", async (e) => {
 
   submitBtn.disabled = true;
 
+  //DATA OF REQ.
+
   const data = {
     name: document.getElementById("username").value.trim(),
     email:    document.getElementById("email").value.trim(),
@@ -29,17 +31,21 @@ form.addEventListener("submit", async (e) => {
   };
 
   try {
-    const res = await signupUser(data);
+    const res = await registerUser(data);
 
     localStorage.setItem("token", res.token);
-    if (res.user?.username || res.user?.name) {
-      localStorage.setItem("username", res.user.username || res.user.name);
+    if (res.user?.name) {
+      localStorage.setItem("name",res.user.name);
     }
 
-    showMessage(`Account created! Welcome, ${res.user?.username || res.user?.name || "User"}!`, "success");
+    showMessage(`Account created! Welcome, ${res.user?.name || "User"}!`, "success");
 
     setTimeout(() => {
-      window.location.href = "login.html";   // was "/login" — needs .html
+      if(req.user?.role === "admin"){
+        window.location.href = "admin-dashboard.html";
+      }else {
+        window.location.href = "dashboard.html";
+      }
     }, 800);
 
   } catch (error) {

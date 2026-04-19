@@ -2,17 +2,8 @@
 import { fetchComplaints } from "../services/complaintService.js";
 import { getCurrentUser } from "../services/authService.js";
 import { checkAuth, logoutUser } from "../utils/auth.js";
+import CATEGORY_LABELS from '../utils/categories.js';
 
-const CATEGORY_LABELS = {
-  1: "Pothole / Road Damage",
-  2: "Street Light",
-  3: "Garbage / Waste",
-  4: "Water Supply",
-  5: "Sewage / Drainage",
-  6: "Encroachment",
-  7: "Noise Pollution",
-  8: "Other",
-};
 // ── Auth ──────────────────────────────────────────────────────
 checkAuth();
 
@@ -26,7 +17,7 @@ if (savedUser) {
 
 getCurrentUser()
   .then(user => {
-    const name = user.username || user.name || savedUser || "User";
+    const name = user.name || savedUser || "User";
     document.getElementById("nav-username").textContent = `Hey, ${name} 👋`;
     localStorage.setItem("username", name);
   })

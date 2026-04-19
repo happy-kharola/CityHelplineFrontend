@@ -22,7 +22,7 @@ document.getElementById("logout-btn").addEventListener("click", logoutUser);
 getCurrentUser()
   .then(user => {
     document.getElementById("nav-username").textContent =
-      `Hey, ${user.name || user.username || "User"} 👋`;
+      `Hey, ${user.name || "User"} 👋`;
   })
   .catch(() => {
     // Non-fatal — checkAuth already guards the page
