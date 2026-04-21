@@ -4,10 +4,27 @@ const form     = document.getElementById("loginForm");
 const message  = document.getElementById("message");
 const loginBtn = document.getElementById("loginBtn");
 
+function initPasswordToggles() {
+  document.querySelectorAll("[data-toggle-password]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const selector = btn.getAttribute("data-toggle-password");
+      const input = selector ? document.querySelector(selector) : null;
+      if (!input) return;
+
+      const isHidden = input.type === "password";
+      input.type = isHidden ? "text" : "password";
+      btn.textContent = isHidden ? "Hide" : "Show";
+      btn.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
+    });
+  });
+}
+
 function showMessage(text, type) {
   message.textContent = text;
   message.className   = `message ${type}`;
 }
+
+initPasswordToggles();
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -26,6 +43,7 @@ form.addEventListener("submit", async (e) => {
     // Store username for navbar greeting (use whatever field your server returns)
     if (res.user?.name) {
       localStorage.setItem("name", res.user.name);
+      localStorage.setItem("username", res.user.name);
     }
     // store role
     if (res.user?.role) {

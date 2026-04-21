@@ -1,8 +1,23 @@
-import { checkAdminAccess } from "../utils/auth";
-import { fetchAdminComplaints, fetchComplaintById, updateComplaintStatus, assignDepartment } from "../services/adminapi";
+import { checkAdminAccess, logoutUser } from "../utils/auth.js";
+import { fetchDepartments } from "../services/departmentapi.js";
+import { updateComplaintStatus, assignDepartment } from "../services/adminapi.js";
+import { fetchComplaintById } from "../services/complaintService.js";
+import CATEGORY_LABELS from "../utils/categories.js";
+import DEFAULT_DEPARTMENTS from "../utils/departments.js";
 
 let complaintData = null;
 let allDepartments = [];
+
+function esc(str) {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+document.getElementById('logout-btn')?.addEventListener('click', logoutUser);
 
 document.addEventListener('DOMContentLoaded', async () => {
   const user = checkAdminAccess();
@@ -10,20 +25,42 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('nav-user').textContent = user.email || 'Admin';
 
   const params = new URLSearchParams(window.location.search);
-  const id = params.get('id');
+  const id = Number(params.get('id'));
   if (!id) {
-    window.location.href = '/404.html';
+    window.location.href = '404.html';
     return;
   }
 
   await loadDepartments();
   await loadComplaint(id);
+
+  // Replace inline onclick with module-safe handlers
+  document.getElementById('detail-content')?.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const action = btn.getAttribute('data-action');
+
+    try {
+      if (action === 'assign') await doAssign();
+      if (action === 'status') await doUpdateStatus(btn.getAttribute('data-status'));
+    } catch (err) {
+      console.error(err);
+      showActionMsg(err.message || 'Action failed', 'error');
+    }
+  });
 });
 
 async function loadDepartments() {
-  const data = await fetchDepartments();
-  if (data.success) {
-    allDepartments = data.data || data.departments || [];
+  try {
+    const data = await fetchDepartments();
+    const apiDepartments = Array.isArray(data) ? data : (data.data || data.departments || []);
+    allDepartments = (apiDepartments.length ? apiDepartments : DEFAULT_DEPARTMENTS).map(d => ({
+      department_id: d.department_id ?? d.id,
+      name: d.name,
+    }));
+  } catch (err) {
+    console.error(err);
+    allDepartments = DEFAULT_DEPARTMENTS;
   }
 }
 
@@ -31,15 +68,13 @@ async function loadComplaint(id) {
   const container = document.getElementById('detail-content');
   container.innerHTML = `<div class="loading"><div class="spinner"></div>Loading complaint...</div>`;
 
-  const data = await fetchComplaintById(id);
-
-  if (!data.success) {
-    container.innerHTML = `<div class="alert alert-error">⚠ ${data.message || 'Failed to load complaint'}</div>`;
-    return;
+  try {
+    const c = await fetchComplaintById(id);
+    complaintData = c;
+    renderDetail(complaintData);
+  } catch (err) {
+    container.innerHTML = `<div class="alert alert-error">⚠ ${esc(err.message || 'Failed to load complaint')}</div>`;
   }
-
-  complaintData = data.data || data.complaint || data;
-  renderDetail(complaintData);
 }
 
 function renderDetail(c) {
@@ -48,7 +83,10 @@ function renderDetail(c) {
   const idx = flow.indexOf(c.status);
   const nextStatus = flow[idx + 1];
 
-  document.getElementById('detail-title').textContent = `Complaint #${c.id}`;
+  const complaintId = c.complaint_id ?? c.id;
+  document.getElementById('detail-title').textContent = `Complaint #${complaintId}`;
+
+  const departmentName = allDepartments.find(d => d.department_id == c.department_id)?.name || '—';
 
   container.innerHTML = `
     <div class="detail-grid">
@@ -58,11 +96,11 @@ function renderDetail(c) {
           <div class="grid-2">
             <div class="detail-field">
               <div class="detail-label">ID</div>
-              <div class="detail-value mono">#${c.id}</div>
+              <div class="detail-value mono">#${complaintId}</div>
             </div>
             <div class="detail-field">
               <div class="detail-label">Category</div>
-              <div class="detail-value">${c.category || '—'}</div>
+              <div class="detail-value">${esc(CATEGORY_LABELS[c.category_id] || '—')}</div>
             </div>
             <div class="detail-field">
               <div class="detail-label">Status</div>
@@ -74,49 +112,44 @@ function renderDetail(c) {
             </div>
             <div class="detail-field">
               <div class="detail-label">Department</div>
-              <div class="detail-value">${c.departmentName || c.department?.name || '—'}</div>
+              <div class="detail-value">${esc(departmentName)}</div>
             </div>
             <div class="detail-field">
               <div class="detail-label">Validation Status</div>
               <div class="detail-value">
-                <span class="badge ${c.validationStatus === 'valid' ? 'badge-resolved' : c.validationStatus === 'invalid' ? 'badge-high' : 'badge-pending'}">
-                  ${c.validationStatus || 'Pending'}
+                <span class="badge badge-${esc(c.validation_status || c.validationStatus || 'pending')}">
+                  ${esc(c.validation_status || c.validationStatus || 'pending')}
                 </span>
               </div>
             </div>
             <div class="detail-field" style="grid-column:1/-1">
               <div class="detail-label">Location / Address</div>
-              <div class="detail-value">${c.location || c.address || '—'}</div>
+              <div class="detail-value">${esc(c.location || c.address || '—')}</div>
             </div>
-            ${c.latitude && c.longitude ? `
+            ${c.lattitude && c.longitude ? `
             <div class="detail-field">
               <div class="detail-label">Latitude</div>
-              <div class="detail-value mono">${c.latitude}</div>
+              <div class="detail-value mono">${esc(c.lattitude)}</div>
             </div>
             <div class="detail-field">
               <div class="detail-label">Longitude</div>
-              <div class="detail-value mono">${c.longitude}</div>
+              <div class="detail-value mono">${esc(c.longitude)}</div>
             </div>` : ''}
             <div class="detail-field" style="grid-column:1/-1">
               <div class="detail-label">Description</div>
-              <div class="detail-value" style="line-height:1.7;">${c.description || '—'}</div>
+              <div class="detail-value" style="line-height:1.7;">${esc(c.description || '—')}</div>
             </div>
             <div class="detail-field">
               <div class="detail-label">Submitted</div>
-              <div class="detail-value mono">${formatDate(c.createdAt)}</div>
-            </div>
-            <div class="detail-field">
-              <div class="detail-label">Updated</div>
-              <div class="detail-value mono">${formatDate(c.updatedAt)}</div>
+              <div class="detail-value mono">${formatDate(c.created_at || c.createdAt)}</div>
             </div>
           </div>
         </div>
 
-        ${c.imageUrl || c.image ? `
+        ${c.image_url ? `
         <div class="card section">
           <div class="card-title">Attached Image</div>
-          <img src="${c.imageUrl || c.image}" alt="Complaint image" class="complaint-image"
-               onerror="this.parentElement.style.display='none'">
+          <img src="${esc(c.image_url)}" alt="Complaint image" class="complaint-image">
         </div>` : ''}
       </div>
 
@@ -130,9 +163,9 @@ function renderDetail(c) {
             <label>Assign Department</label>
             <select id="assign-dept" style="margin-bottom:8px;">
               <option value="">Select department...</option>
-              ${allDepartments.map(d => `<option value="${d.id}" ${c.departmentId == d.id ? 'selected' : ''}>${d.name}</option>`).join('')}
+              ${allDepartments.map(d => `<option value="${d.department_id}" ${c.department_id == d.department_id ? 'selected' : ''}>${esc(d.name)}</option>`).join('')}
             </select>
-            <button class="btn btn-primary" style="width:100%" onclick="doAssign()">Assign Department</button>
+            <button class="btn btn-primary" style="width:100%" data-action="assign">Assign Department</button>
           </div>
 
           ${nextStatus ? `
@@ -141,13 +174,19 @@ function renderDetail(c) {
             <div class="alert alert-info" style="margin-bottom:12px;font-size:12px;">
               Next step: <strong>${formatStatus(nextStatus)}</strong>
             </div>
-            <button class="btn btn-primary" style="width:100%;background:var(--success);" onclick="doUpdateStatus('${nextStatus}')">
+            <button class="btn btn-primary" style="width:100%;background:var(--success);" data-action="status" data-status="${nextStatus}">
               Move to ${formatStatus(nextStatus)}
             </button>
           </div>` : `
           <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px;">
             <div class="alert alert-success">✓ This complaint is fully resolved</div>
           </div>`}
+
+          <div style="margin-top:12px;">
+            <a class="btn btn-sm btn-secondary" style="width:100%;justify-content:center;" href="departments.html">
+              + Create / manage departments
+            </a>
+          </div>
         </div>
 
         ${c.submittedBy || c.user ? `
@@ -170,23 +209,17 @@ function renderDetail(c) {
 async function doAssign() {
   const deptId = document.getElementById('assign-dept').value;
   if (!deptId) { showActionMsg('Please select a department', 'error'); return; }
-  const data = await assignDepartment(complaintData.id, deptId);
-  if (!data.success) {
-    showActionMsg(data.message || 'Assignment failed', 'error');
-  } else {
-    showActionMsg('Department assigned successfully', 'success');
-    await loadComplaint(complaintData.id);
-  }
+  const complaintId = complaintData?.complaint_id ?? complaintData?.id;
+  await assignDepartment(complaintId, Number(deptId));
+  showActionMsg('Department assigned successfully', 'success');
+  await loadComplaint(complaintId);
 }
 
 async function doUpdateStatus(status) {
-  const data = await updateComplaintStatus(complaintData.id, status);
-  if (!data.success) {
-    showActionMsg(data.message || 'Status update failed', 'error');
-  } else {
-    showActionMsg(`Status updated to ${formatStatus(status)}`, 'success');
-    await loadComplaint(complaintData.id);
-  }
+  const complaintId = complaintData?.complaint_id ?? complaintData?.id;
+  await updateComplaintStatus(complaintId, status);
+  showActionMsg(`Status updated to ${formatStatus(status)}`, 'success');
+  await loadComplaint(complaintId);
 }
 
 function showActionMsg(msg, type) {

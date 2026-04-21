@@ -113,6 +113,44 @@ body{
   transition: border-color 0.2s, box-shadow 0.2s;   /* modification */
 }
 
+.input-with-action {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-with-action input {
+  width: 100%;
+  padding-right: 88px; /* space for action button */
+}
+
+.input-action-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 1px solid var(--border-color);
+  background: #fff;
+  color: var(--text-light);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.input-action-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.input-action-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0,123,255,0.15);
+  border-color: var(--primary-color);
+}
+
 /* testing
 modification */
 .field input:focus {

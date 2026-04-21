@@ -4,66 +4,58 @@
 // - assignDepartment: Assigns a department to a complaint
 // - updateComplaintStatus: Updates the status of a complaint
 
-import { buildHeaders } from "../utils/auth.js";
+import { API_BASE } from "../js/config.js";
+import { buildHeaders, clearSession } from "../utils/auth.js";
 
-if (typeof BASE_URL === 'undefined') var BASE_URL = 'http://localhost:5003';
+async function parseError(res) {
+  try {
+    const data = await res.clone().json();
+    return data?.message || data?.error || `Request failed (${res.status})`;
+  } catch {
+    try {
+      const text = await res.clone().text();
+      return text?.slice(0, 180) || `Request failed (${res.status})`;
+    } catch {
+      return `Request failed (${res.status})`;
+    }
+  }
+}
+
+async function fetchJson(path, init = {}) {
+  const res = await fetch(`${API_BASE}${path}`, { ...init, headers: { ...(init.headers || {}) } });
+  if (res.status === 401 || res.status === 403) {
+    clearSession();
+    window.location.href = "./unauthorized.html";
+    throw new Error("Unauthorized");
+  }
+  if (!res.ok) throw new Error(await parseError(res));
+  return res.json();
+}
 
 export async function fetchDashboard() {
-  const res = await fetch(`${BASE_URL}/api/admin/dashboard`, {
-    headers: buildHeaders()
-  });
-
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.message || 'Request failed');
-  }
-
-  return res.json();
+  return fetchJson("/api/admin/dashboard", { headers: buildHeaders() });
 }
 export async function fetchAdminComplaints(params = {}) {
   const query = new URLSearchParams();
   if (params.status) query.set('status', params.status);
-  if (params.department) query.set('department', params.department);
+  if (params.department_id) query.set('department_id', params.department_id);
   if (params.limit) query.set('limit', params.limit);
   if (params.offset) query.set('offset', params.offset);
-  const res = await fetch(`${BASE_URL}/api/admin/complaints?${query}`, {
-    headers: buildHeaders()
-  });
-
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.message || 'Request failed');
-  }
-
-  return res.json();
+  return fetchJson(`/api/admin/complaints?${query}`, { headers: buildHeaders() });
 }
 
 export async function assignDepartment(complaintId, departmentId) {
-  const res = await fetch(`${BASE_URL}/api/admin/complaints/${complaintId}/assign`, {
-    method: 'PATCH',
+  return fetchJson(`/api/admin/complaints/${complaintId}/assign`, {
+    method: "PATCH",
     headers: buildHeaders(),
-    body: JSON.stringify({ departmentId })
+    body: JSON.stringify({ departmentId }),
   });
-
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.message || 'Request failed');
-  }
-
-  return res.json();
 }
 
 export async function updateComplaintStatus(complaintId, status) {
-  const res = await fetch(`${BASE_URL}/api/admin/complaints/${complaintId}/status`, {
-    method: 'PATCH',
+  return fetchJson(`/api/admin/complaints/${complaintId}/status`, {
+    method: "PATCH",
     headers: buildHeaders(),
-    body: JSON.stringify({ status })
+    body: JSON.stringify({ status }),
   });
-
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.message || 'Request failed');
-  }
-
-  return res.json();
 }

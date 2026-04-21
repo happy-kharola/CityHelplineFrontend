@@ -105,26 +105,92 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
 }).addTo(pickMap);
 
-// Try to center on user's real location
-if (navigator.geolocation) {
-  navigator.geolocation.getCurrentPosition((pos) => {
-    pickMap.setView([pos.coords.latitude, pos.coords.longitude], 15);
-  });
-}
-
-pickMap.on("click", (e) => {
-  pickedLat = e.latlng.lat.toFixed(6);
-  pickedLng = e.latlng.lng.toFixed(6);
+function setPickedLocation(lat, lng, metaText) {
+  pickedLat = Number(lat).toFixed(6);
+  pickedLng = Number(lng).toFixed(6);
 
   document.getElementById("coords-text").textContent =
-    `${pickedLat}, ${pickedLng}`;
+    metaText ? `${pickedLat}, ${pickedLng} — ${metaText}` : `${pickedLat}, ${pickedLng}`;
 
-  if (pinMarker) {
-    pinMarker.setLatLng(e.latlng);
-  } else {
-    pinMarker = L.marker(e.latlng).addTo(pickMap);
+  const ll = L.latLng(Number(pickedLat), Number(pickedLng));
+  pickMap.setView(ll, 15);
+
+  if (pinMarker) pinMarker.setLatLng(ll);
+  else pinMarker = L.marker(ll).addTo(pickMap);
+}
+
+async function detectLocation() {
+  const coordsText = document.getElementById("coords-text");
+  coordsText.textContent = "Detecting your location…";
+
+  if (!navigator.geolocation) {
+    showToast("Geolocation is not supported by your browser. Using default location.", "error");
+    setPickedLocation(DEFAULT_LAT, DEFAULT_LNG, "default");
+    return;
   }
-});
+
+  // Try to get the most accurate fix we can quickly.
+  // Many browsers return a coarse/cached location first; watchPosition usually improves it.
+  await new Promise((resolve) => {
+    let best = null; // { lat, lng, acc }
+    let updates = 0;
+    let watchId = null;
+
+    const applyBest = (tag) => {
+      const acc = Math.round(best?.acc ?? 0);
+      const meta = acc ? `${tag}, ±${acc}m` : tag;
+      setPickedLocation(best.lat, best.lng, meta);
+    };
+
+    const finish = (tag) => {
+      if (watchId != null) navigator.geolocation.clearWatch(watchId);
+      if (best) applyBest(tag);
+      resolve();
+    };
+
+    const onPos = (pos) => {
+      updates += 1;
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const acc = Number.isFinite(pos.coords.accuracy) ? pos.coords.accuracy : Infinity;
+
+      if (!best || acc < best.acc) {
+        best = { lat, lng, acc };
+        applyBest("auto");
+      }
+
+      // Stop early if accuracy is already good enough.
+      if (acc <= 80) finish("auto");
+      // Otherwise stop after a few improvements.
+      if (updates >= 3) finish("auto");
+    };
+
+    const onErr = (err) => {
+      console.warn("Geolocation error:", err);
+      showToast("Location permission denied/unavailable. Using default location.", "error");
+      setPickedLocation(DEFAULT_LAT, DEFAULT_LNG, "default");
+      resolve();
+    };
+
+    // Force fresh reading (no cached location), try high accuracy.
+    try {
+      watchId = navigator.geolocation.watchPosition(
+        onPos,
+        onErr,
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+      );
+    } catch (e) {
+      onErr(e);
+      return;
+    }
+
+    // Safety stop: don’t hang forever.
+    setTimeout(() => {
+      if (best) finish("auto");
+      else onErr(new Error("Geolocation timeout"));
+    }, 14000);
+  });
+}
 
 // ── Submit ─────────────────────────────────────────────────────
 const submitBtn = document.getElementById("submit-btn");
@@ -175,7 +241,7 @@ submitBtn.addEventListener("click", async () => {
     if (pinMarker) { pickMap.removeLayer(pinMarker); pinMarker = null; }
     pickedLat = null;
     pickedLng = null;
-    document.getElementById("coords-text").textContent = "none — click the map";
+    await detectLocation();
     removeBtn.click(); // clear image preview
 
     setTimeout(() => { window.location.href = "dashboard.html"; }, 1800);
@@ -192,3 +258,4 @@ submitBtn.addEventListener("click", async () => {
 
 // ── Init ───────────────────────────────────────────────────────
 lucide.createIcons();
+detectLocation();

@@ -323,8 +323,22 @@ html, body {
 #map {
   flex: 1;
   width: 100%;
-  min-height: 480px;
+  min-height: 0;
+  height: 100%;
   z-index: 1;
+}
+
+/* Fixed-size map container to prevent overflow/spill */
+.map-panel {
+  height: 560px;
+  overflow: hidden;
+}
+
+/* Match complaints panel height with map panel,
+   so list scrolls inside the panel while page scroll remains enabled. */
+.complaints-panel {
+  height: 560px;
+  overflow: hidden;
 }
 
 /* Custom Leaflet popup */
@@ -354,7 +368,8 @@ html, body {
 @media (max-width: 900px) {
   .stats-row     { grid-template-columns: repeat(2, 1fr); }
   .content-row   { grid-template-columns: 1fr; }
-  #map           { min-height: 320px; }
+  .map-panel     { height: 360px; }
+  #map           { height: 100%; }
   .nav-links     { display: none; }
 }
 @media (max-width: 480px) {

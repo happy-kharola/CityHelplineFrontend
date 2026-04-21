@@ -1,65 +1,54 @@
-// Functions in this file:
-// - fetchDepartments: Fetches all departments
-// - createDepartment: Creates a new department
-// - updateDepartment: Updates an existing department
-// - deleteDepartment: Deletes a department by ID
+import { API_BASE } from "../js/config.js";
+import { buildHeaders, clearSession } from "../utils/auth.js";
 
-if (typeof BASE_URL === 'undefined') var BASE_URL = 'http://localhost:5003';
-import { buildHeaders } from "../utils/auth.js";
+async function parseError(res) {
+  try {
+    const data = await res.clone().json();
+    return data?.message || data?.error || `Request failed (${res.status})`;
+  } catch {
+    try {
+      const text = await res.clone().text();
+      return text?.slice(0, 180) || `Request failed (${res.status})`;
+    } catch {
+      return `Request failed (${res.status})`;
+    }
+  }
+}
+
+async function fetchJson(path, init = {}) {
+  const res = await fetch(`${API_BASE}${path}`, { ...init, headers: { ...(init.headers || {}) } });
+  if (res.status === 401 || res.status === 403) {
+    clearSession();
+    window.location.href = "./unauthorized.html";
+    throw new Error("Unauthorized");
+  }
+  if (!res.ok) throw new Error(await parseError(res));
+  return res.json();
+}
 
 export async function fetchDepartments() {
-  const res = await fetch(`${BASE_URL}/api/admin/departments`, {
-    headers: buildHeaders()
-  });
-
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.message || 'Request failed');
-  }
-
-  return res.json();
+  return fetchJson("/api/admin/departments", { headers: buildHeaders() });
 }
 
 export async function createDepartment(data) {
-  const res = await fetch(`${BASE_URL}/api/admin/departments`, {
-    method: 'POST',
+  return fetchJson("/api/admin/departments", {
+    method: "POST",
     headers: buildHeaders(),
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
-
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.message || 'Request failed');
-  }
-
-  return res.json();
 }
 
 export async function updateDepartment(id, data) {
-  const res = await fetch(`${BASE_URL}/api/admin/departments/${id}`, {
-    method: 'PUT',
+  return fetchJson(`/api/admin/departments/${id}`, {
+    method: "PUT",
     headers: buildHeaders(),
-    body: JSON.stringify(data)
+    body: JSON.stringify(data),
   });
-
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.message || 'Request failed');
-  }
-
-  return res.json();
 }
 
 export async function deleteDepartment(id) {
-  const res = await fetch(`${BASE_URL}/api/admin/departments/${id}`, {
-    method: 'DELETE',
-    headers: buildHeaders()
+  return fetchJson(`/api/admin/departments/${id}`, {
+    method: "DELETE",
+    headers: buildHeaders(),
   });
-
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.message || 'Request failed');
-  }
-
-  return res.json();
 }

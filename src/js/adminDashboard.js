@@ -1,7 +1,16 @@
 import { checkAdminAccess, logoutUser } from "../utils/auth.js";
-import {fetchAdminComplaints, fetchDashboard } from "../services/adminapi.js";
+import { fetchDashboard } from "../services/adminapi.js";
 
 document.getElementById('logout-btn').addEventListener('click', logoutUser);
+
+function esc(str) {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   const user = checkAdminAccess();
@@ -26,31 +35,50 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function renderWorkload(departments) {
     if (!departments || departments.length === 0) return '<p style="color:var(--text2);font-size:13px;">No data</p>';
-    const max = Math.max(...departments.map(d => d.count || 0), 1);
+    const max = Math.max(...departments.map(d => d.total_assigned ?? d.count ?? 0), 1);
     return departments.map(d => `
       <div class="workload-item">
         <div class="workload-header">
-          <span class="workload-name">${d.name || d.department || 'Unknown'}</span>
-          <span class="workload-count">${d.count || 0} complaints</span>
+          <span class="workload-name">${esc(d.name || d.department || 'Unknown')}</span>
+          <span class="workload-count">${(d.total_assigned ?? d.count ?? 0)} complaints</span>
         </div>
         <div class="workload-bar-bg">
-          <div class="workload-bar-fill" style="width:${Math.round((d.count || 0) / max * 100)}%"></div>
+          <div class="workload-bar-fill" style="width:${Math.round(((d.total_assigned ?? d.count ?? 0)) / max * 100)}%"></div>
         </div>
       </div>
     `).join('');
   }
 
-  function renderActivity(activities) {
-    if (!activities || activities.length === 0) return '<div class="empty-state"><div class="empty-state-text">No recent activity</div></div>';
-    return activities.map(a => `
+  function renderAuditActivityRow(a) {
+    const type = a.action_type || a.actionType || 'activity';
+    const when = a.created_at || a.createdAt || a.timestamp;
+    const complaintId = a.complaint_id || a.complaintId;
+    const before = a.before_value || a.beforeValue;
+    const after = a.after_value || a.afterValue;
+
+    let text = 'Activity recorded';
+    if (type === 'status_change') {
+      text = `Complaint #${complaintId}: status ${before?.status ? `"${before.status}"` : ''} → ${after?.status ? `"${after.status}"` : '"updated"'}`;
+    } else if (type === 'department_assignment') {
+      text = `Complaint #${complaintId}: department assigned to ID ${after?.department_id ?? after?.departmentId ?? '—'}`;
+    } else if (complaintId) {
+      text = `Complaint #${complaintId}: ${type}`;
+    }
+
+    return `
       <div class="activity-item">
         <div class="activity-dot"></div>
         <div>
-          <div class="activity-text">${a.description || a.action || 'Activity recorded'}</div>
-          <div class="activity-time">${formatDate(a.createdAt || a.timestamp)}</div>
+          <div class="activity-text">${esc(text)}</div>
+          <div class="activity-time">${formatDate(when)}</div>
         </div>
       </div>
-    `).join('');
+    `;
+  }
+
+  function renderActivity(activities) {
+    if (!activities || activities.length === 0) return '<div class="empty-state"><div class="empty-state-text">No recent activity</div></div>';
+    return activities.map(renderAuditActivityRow).join('');
   }
 
   showLoading();
@@ -63,26 +91,24 @@ try {
   const departments = d.departmentWorkload || d.departments || [];
   const activity = d.recentActivity || d.activity || [];
 
-  container.innerHTML = `...`; // keep your existing HTML
-
 
   container.innerHTML = `
     <div class="stats-grid">
       <div class="stat-card pending">
         <div class="stat-label">Pending</div>
-        <div class="stat-value">${totals.pending ?? 0}</div>
+        <div class="stat-value">${totals.pending ?? totals.pending_count ?? 0}</div>
       </div>
       <div class="stat-card underReview">
         <div class="stat-label">Under Review</div>
-        <div class="stat-value">${totals.underReview ?? 0}</div>
+        <div class="stat-value">${totals.underReview ?? totals.underreview ?? 0}</div>
       </div>
       <div class="stat-card inProgress">
         <div class="stat-label">In Progress</div>
-        <div class="stat-value">${totals.inProgress ?? 0}</div>
+        <div class="stat-value">${totals.inProgress ?? totals.inprogress ?? 0}</div>
       </div>
       <div class="stat-card resolved">
         <div class="stat-label">Resolved</div>
-        <div class="stat-value">${totals.resolved ?? 0}</div>
+        <div class="stat-value">${totals.resolved ?? totals.resolved_count ?? 0}</div>
       </div>
     </div>
 
